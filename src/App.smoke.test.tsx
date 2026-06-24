@@ -2,6 +2,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
+import { HEBREW_SONGS } from './data/hebrewSongs';
 
 // Don't hit the real iTunes API in tests; pretend every song has a preview.
 vi.mock('./services/audioSource', () => ({
@@ -55,6 +56,28 @@ describe('App smoke flow', () => {
 
     // Back to a hidden turn for the next player.
     expect(await screen.findByText('Pass the device to')).toBeTruthy();
+  });
+
+  it('deals from the Hebrew deck when the Hebrew deck is chosen', async () => {
+    render(<App />);
+    const inputs = screen.getAllByRole('textbox');
+    fireEvent.change(inputs[0], { target: { value: 'Ada' } });
+    fireEvent.change(inputs[1], { target: { value: 'Bo' } });
+    fireEvent.click(screen.getByText('Hebrew')); // pick the Hebrew deck
+    fireEvent.click(screen.getByText('Start game'));
+
+    // Play one card through to reveal, where the song title is shown.
+    fireEvent.click(await screen.findByText(/I’m (Ada|Bo)/));
+    fireEvent.click(await screen.findByText(/Place it on my timeline/));
+    fireEvent.click(screen.getByLabelText('Place at position 1'));
+    fireEvent.click(screen.getByText('Lock in placement'));
+    fireEvent.click(await screen.findByText('No challenge — reveal'));
+    await screen.findByText(/Next turn|See results/);
+
+    // Every Hebrew title rendered on screen should belong to the Hebrew deck.
+    const hebrewTitles = HEBREW_SONGS.map((s) => s.title);
+    const shownHebrew = hebrewTitles.filter((t) => screen.queryAllByText(t).length > 0);
+    expect(shownHebrew.length).toBeGreaterThan(0);
   });
 
   it('lets a player skip a song with a token', async () => {

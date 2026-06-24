@@ -27,8 +27,12 @@ export function SongCard({ song, size = 'md' }: { song: Song; size?: 'sm' | 'md'
       <div className="text-2xl font-extrabold tracking-tight" style={{ color: accent }}>
         {song.year}
       </div>
-      <div className="mt-1 text-xs font-semibold leading-tight line-clamp-2">{song.title}</div>
-      <div className="mt-0.5 text-[10px] text-white/50 leading-tight line-clamp-1">{song.artist}</div>
+      <div dir="auto" className="mt-1 text-xs font-semibold leading-tight line-clamp-2">
+        {song.title}
+      </div>
+      <div dir="auto" className="mt-0.5 text-[10px] text-white/50 leading-tight line-clamp-1">
+        {song.artist}
+      </div>
     </div>
   );
 }

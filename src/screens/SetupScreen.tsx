@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Button } from '../components/Button';
-import type { Settings } from '../state/gameTypes';
+import { DECKS } from '../data/decks';
+import type { DeckId, Settings } from '../state/gameTypes';
 
 export function SetupScreen({ onStart }: { onStart: (names: string[], settings: Settings) => void }) {
   const [names, setNames] = useState<string[]>(['', '']);
   const [useTokens, setUseTokens] = useState(true);
   const [targetCards, setTargetCards] = useState(10);
+  const [deck, setDeck] = useState<DeckId>('regular');
 
   const setName = (i: number, v: string) =>
     setNames((ns) => ns.map((n, j) => (j === i ? v : n)));
@@ -58,6 +60,33 @@ export function SetupScreen({ onStart }: { onStart: (names: string[], settings: 
         )}
       </div>
 
+      <div className="mt-6">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">Deck</div>
+        <div className="grid grid-cols-2 gap-2">
+          {DECKS.map((d) => {
+            const selected = deck === d.id;
+            return (
+              <button
+                key={d.id}
+                onClick={() => setDeck(d.id)}
+                className={`rounded-2xl p-4 text-left ring-1 transition-colors ${
+                  selected
+                    ? 'bg-violet-500/20 ring-violet-400/60'
+                    : 'bg-white/5 ring-white/10 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{d.name}</span>
+                  {selected && <span className="text-violet-300">✓</span>}
+                </div>
+                <div className="mt-1 text-xs text-white/50">{d.blurb}</div>
+                <div className="mt-1 text-[11px] text-white/30">{d.songs.length} songs</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="mt-6 space-y-4 rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
         <label className="flex items-center justify-between">
           <span className="text-sm">Use HITSTER tokens</span>
@@ -104,6 +133,7 @@ export function SetupScreen({ onStart }: { onStart: (names: string[], settings: 
               useTokens,
               startingTokens: 2,
               targetCards,
+              deck,
             })
           }
         >

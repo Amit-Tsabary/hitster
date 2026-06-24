@@ -22,6 +22,10 @@ Open the dev URL on a phone or laptop and pass the single device around as you p
 - **Music.** 30-second previews come from the public **iTunes Search API** (free, no auth). Preview
   URLs are cached in `localStorage`. The gameplay-critical **release year is hand-verified** in
   [`src/data/songs.ts`](src/data/songs.ts) — iTunes' own date field is unreliable and is not used.
+- **Decks.** Choose a deck at setup: **Regular** (global pop/rock) or **Hebrew** (Israeli/Hebrew
+  songs only). Decks live in [`src/data/`](src/data/) and are registered in
+  [`src/data/decks.ts`](src/data/decks.ts) — add a new deck by dropping in a song list and one entry.
+  Hebrew (and any RTL) text renders correctly via `dir="auto"`.
 - **HITSTER tokens** (toggleable): start with 2, cap at 5. Earn one by naming the title **and**
   artist; spend 1 to *Skip*, 1 to *Steal* a misplacement, or 3 for a *Free card*.
 - **Winning:** first to the target timeline length (5 / 8 / 10 cards).

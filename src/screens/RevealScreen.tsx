@@ -51,8 +51,12 @@ export function RevealScreen({ state, card, activePlayer, onAwardBonus, onNext }
         >
           <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-white/5 p-4 text-center ring-1 ring-white/15 [backface-visibility:hidden]">
             <div className="text-5xl font-black text-violet-300">{card.year}</div>
-            <div className="mt-3 text-base font-bold leading-tight">{card.title}</div>
-            <div className="mt-1 text-sm text-white/50">{card.artist}</div>
+            <div dir="auto" className="mt-3 text-base font-bold leading-tight">
+              {card.title}
+            </div>
+            <div dir="auto" className="mt-1 text-sm text-white/50">
+              {card.artist}
+            </div>
           </div>
         </motion.div>
       </div>

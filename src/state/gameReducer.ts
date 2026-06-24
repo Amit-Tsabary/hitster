@@ -1,6 +1,6 @@
 import type { GameState, Player, Settings, Song } from './gameTypes';
 import { FREE_CARD_COST, MAX_TOKENS, NAME_BONUS, SKIP_COST, STEAL_COST } from './gameTypes';
-import { SONGS } from '../data/songs';
+import { findSong, getDeckSongs } from '../data/decks';
 
 // ---------------------------------------------------------------------------
 // Pure helpers
@@ -39,12 +39,6 @@ function addTokens(p: Player, n: number): Player {
   return { ...p, tokens: Math.min(MAX_TOKENS, p.tokens + n) };
 }
 
-function findSong(id: string): Song {
-  const s = SONGS.find((x) => x.id === id);
-  if (!s) throw new Error(`Unknown song id ${id}`);
-  return s;
-}
-
 // ---------------------------------------------------------------------------
 // Actions
 // ---------------------------------------------------------------------------
@@ -76,7 +70,7 @@ export const initialState: GameState = {
   pendingSlot: null,
   attemptingName: false,
   steal: null,
-  settings: { useTokens: true, startingTokens: 2, targetCards: 10 },
+  settings: { useTokens: true, startingTokens: 2, targetCards: 10, deck: 'regular' },
   winnerId: null,
   lastPlacementCorrect: null,
   lastCardWinnerId: null,
@@ -95,7 +89,7 @@ function drawCard(deck: string[], from: number): { card: Song | null; nextIndex:
 export function gameReducer(state: GameState, action: Action): GameState {
   switch (action.type) {
     case 'START_GAME': {
-      const deck = shuffle(SONGS.map((s) => s.id));
+      const deck = shuffle(getDeckSongs(action.settings.deck).map((s) => s.id));
       let idx = 0;
       // Deal one starting card per player.
       const players: Player[] = action.names.map((name, i) => {

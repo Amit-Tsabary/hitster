@@ -1,5 +1,8 @@
 // Core domain types for the game.
 
+/** Identifies which curated song deck is in play. */
+export type DeckId = 'regular' | 'hebrew';
+
 /** A single song / music card. `year` is the hand-verified original release year. */
 export interface Song {
   id: string;
@@ -30,6 +33,8 @@ export interface Settings {
   startingTokens: number;
   /** Timeline length needed to win. */
   targetCards: number;
+  /** Which song deck to play with ('regular' | 'hebrew'). */
+  deck: DeckId;
 }
 
 /** A challenger who stole the placement opportunity for the current card. */

@@ -1,0 +1,155 @@
+// Build-time prefetch of iTunes 30s preview URLs for every song in every deck.
+//
+// Why this exists: calling the iTunes Search API live during a game makes a burst of
+// requests that trips Apple's per-IP rate limit (~20/min), which surfaces in the UI as
+// "No preview found — skip to the next song." Since the decks are static, we resolve every
+// preview URL once here (slowly, with backoff) and bake the result into
+// src/data/previewUrls.generated.ts. At runtime the game reads the baked URL and never
+// needs the network for previews. Re-run with `npm run prefetch` after editing the decks.
+
+import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const DATA_FILES = ['src/data/songs.ts', 'src/data/hebrewSongs.ts'];
+const OUT_FILE = 'src/data/previewUrls.generated.ts';
+
+// Manual overrides for songs the automatic search can't match (e.g. Hebrew titles iTunes
+// indexes under a different spelling). Key by song id. Use `null` to deliberately mark a
+// song as "no preview exists" so we stop retrying it; use a string to force a search term.
+//   's42': null,                       // genuinely unavailable
+//   'h5':  'izhar cohen a ba ni bi',   // force an alternate search term
+const OVERRIDES = {};
+
+const norm = (s) =>
+  s
+    .toLowerCase()
+    .replace(/[’']/g, '')
+    .replace(/[^\p{L}\p{N} ]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+function parseSongs(file) {
+  const txt = readFileSync(join(ROOT, file), 'utf8');
+  const re = /id:\s*'([^']*)',\s*title:\s*'([^']*)',\s*artist:\s*'([^']*)'/g;
+  const out = [];
+  let m;
+  while ((m = re.exec(txt))) out.push({ id: m[1], title: m[2], artist: m[3] });
+  return out;
+}
+
+function bestMatch(results, song) {
+  const wantArtist = norm(song.artist);
+  const wantTitle = norm(song.title);
+  let best = null;
+  for (const r of results) {
+    if (!r.previewUrl) continue;
+    const artist = norm(r.artistName ?? '');
+    const title = norm(r.trackName ?? '');
+    let score = 0;
+    if (artist.includes(wantArtist) || wantArtist.includes(artist)) score += 2;
+    if (title.includes(wantTitle) || wantTitle.includes(title)) score += 2;
+    if (best === null || score > best.score) best = { url: r.previewUrl, score };
+  }
+  return best && best.score > 0 ? best.url : (results.find((r) => r.previewUrl)?.previewUrl ?? null);
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// One Search API call, with backoff that specifically handles the plain-text
+// "Rate limit exceeded" body iTunes returns instead of JSON when throttled.
+async function search(term, attempt = 0) {
+  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&limit=10`;
+  const res = await fetch(url);
+  const body = await res.text();
+  if (!res.ok || body.trimStart().startsWith('Rate limit')) {
+    if (attempt >= 5) throw new Error(`rate-limited (gave up after ${attempt} retries)`);
+    const wait = 5000 * 2 ** attempt; // 5s, 10s, 20s, 40s, 80s
+    process.stdout.write(` [throttled, waiting ${wait / 1000}s]`);
+    await sleep(wait);
+    return search(term, attempt + 1);
+  }
+  return JSON.parse(body).results ?? [];
+}
+
+// Try progressively looser queries so partially-indexed songs still resolve.
+async function resolve(song) {
+  if (song.id in OVERRIDES) {
+    const ov = OVERRIDES[song.id];
+    if (ov === null) return null;
+    return bestMatch(await search(ov), song);
+  }
+  const queries = [`${song.artist} ${song.title}`, song.title, song.artist];
+  for (const q of queries) {
+    const url = bestMatch(await search(q), song);
+    if (url) return url;
+    await sleep(300);
+  }
+  return null;
+}
+
+async function main() {
+  const songs = DATA_FILES.flatMap(parseSongs);
+  console.log(`Resolving previews for ${songs.length} songs (slow & polite)...\n`);
+
+  // Preserve any URLs already generated so a re-run doesn't lose a working URL if iTunes
+  // has a bad day for one song.
+  const prev = {};
+  try {
+    const old = readFileSync(join(ROOT, OUT_FILE), 'utf8');
+    const re = /'([^']+)':\s*'([^']+)'/g;
+    let m;
+    while ((m = re.exec(old))) prev[m[1]] = m[2];
+  } catch {
+    /* first run */
+  }
+
+  const map = {};
+  const misses = [];
+  for (const song of songs) {
+    process.stdout.write(`  ${song.id} ${song.title} — ${song.artist} ...`);
+    let url = null;
+    try {
+      url = await resolve(song);
+    } catch (e) {
+      url = prev[song.id] ?? null; // keep last known good on hard failure
+      process.stdout.write(` [error: ${e.message}]`);
+    }
+    if (url) {
+      map[song.id] = url;
+      console.log(' ok');
+    } else if (prev[song.id]) {
+      map[song.id] = prev[song.id];
+      console.log(' kept previous');
+    } else {
+      misses.push(`${song.id} ${song.title} — ${song.artist}`);
+      console.log(' MISS');
+    }
+    await sleep(500); // stay well under the rate limit
+  }
+
+  const entries = Object.keys(map)
+    .sort()
+    .map((id) => `  '${id}': '${map[id]}',`)
+    .join('\n');
+  const out = `// AUTO-GENERATED by scripts/fetch-previews.mjs — do not edit by hand.
+// Run \`npm run prefetch\` to refresh after changing the decks.
+// Maps song id -> iTunes 30s preview URL. Songs absent here have no known preview and
+// fall back to a live lookup at runtime (see services/audioSource.ts).
+
+export const PREVIEW_URLS: Record<string, string> = {
+${entries}
+};
+`;
+  writeFileSync(join(ROOT, OUT_FILE), out);
+
+  console.log(`\nWrote ${Object.keys(map).length}/${songs.length} preview URLs to ${OUT_FILE}.`);
+  if (misses.length) {
+    console.log(`\n${misses.length} song(s) had no preview — they'll fall back to live lookup:`);
+    misses.forEach((m) => console.log('  • ' + m));
+    console.log('\nTip: add an OVERRIDES entry in this script to force a search term for these.');
+  }
+}
+
+main();
