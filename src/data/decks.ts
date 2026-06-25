@@ -1,6 +1,7 @@
 import type { DeckId, Song } from '../state/gameTypes';
 import { SONGS } from './songs';
 import { HEBREW_SONGS } from './hebrewSongs';
+import { PREVIEW_URLS } from './previewUrls.generated';
 
 export type { DeckId };
 
@@ -13,14 +14,19 @@ export interface DeckInfo {
   songs: Song[];
 }
 
+// A song is only playable if we have a baked 30s preview for it (see scripts/fetch-previews.mjs).
+// Songs without a preview are excluded from the deck entirely so they never come up in a game.
+// Re-run `npm run prefetch` after editing the decks to refresh which songs are playable.
+const isPlayable = (s: Song): boolean => Boolean(PREVIEW_URLS[s.id]);
+
 export const DECKS: DeckInfo[] = [
-  { id: 'regular', name: 'Regular', blurb: 'Global pop & rock hits', songs: SONGS },
-  { id: 'hebrew', name: 'Hebrew', blurb: 'Israeli & Hebrew songs only', songs: HEBREW_SONGS },
+  { id: 'regular', name: 'Regular', blurb: 'Global pop & rock hits', songs: SONGS.filter(isPlayable) },
+  { id: 'hebrew', name: 'Hebrew', blurb: 'Israeli & Hebrew songs only', songs: HEBREW_SONGS.filter(isPlayable) },
 ];
 
-/** Lookup of every song across all decks, by id. Song ids are unique across decks. */
+/** Lookup of every song across all decks, by id (includes non-playable songs, for safety). */
 const SONG_BY_ID = new Map<string, Song>(
-  DECKS.flatMap((d) => d.songs).map((s) => [s.id, s]),
+  [...SONGS, ...HEBREW_SONGS].map((s) => [s.id, s]),
 );
 
 export function findSong(id: string): Song {
