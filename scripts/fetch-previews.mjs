@@ -12,7 +12,11 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DATA_FILES = ['src/data/songs.ts', 'src/data/hebrewSongs.ts'];
+// The regular deck is hand-curated in songs.ts. The Hebrew deck's source of truth is the
+// generated JSON (see scripts/fetch_wikipedia_songs.py) — we read it directly here so the
+// ids we bake match the ids hebrewSongs.ts derives from the same file.
+const TS_DATA_FILES = ['src/data/songs.ts'];
+const HEBREW_JSON = 'src/data/hebrewSongs.generated.json';
 const OUT_FILE = 'src/data/previewUrls.generated.ts';
 
 // Manual overrides for songs the automatic search can't match (e.g. Hebrew titles iTunes
@@ -37,6 +41,17 @@ function parseSongs(file) {
   let m;
   while ((m = re.exec(txt))) out.push({ id: m[1], title: m[2], artist: m[3] });
   return out;
+}
+
+// Load the Hebrew deck from its generated JSON. The id/title mapping must stay in sync with
+// src/data/hebrewSongs.ts (id `h${pageid}`, title = the song's `name`).
+function loadHebrewSongs(file) {
+  const records = JSON.parse(readFileSync(join(ROOT, file), 'utf8'));
+  return records.map((s) => ({ id: `h${s.pageid}`, title: s.name, artist: s.artist }));
+}
+
+function loadAllSongs() {
+  return [...TS_DATA_FILES.flatMap(parseSongs), ...loadHebrewSongs(HEBREW_JSON)];
 }
 
 function bestMatch(results, song) {
@@ -90,7 +105,7 @@ async function resolve(song) {
 }
 
 async function main() {
-  const songs = DATA_FILES.flatMap(parseSongs);
+  const songs = loadAllSongs();
   console.log(`Resolving previews for ${songs.length} songs (slow & polite)...\n`);
 
   // Preserve any URLs already generated so a re-run doesn't lose a working URL if iTunes

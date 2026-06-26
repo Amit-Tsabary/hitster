@@ -57,9 +57,7 @@ export function TurnHiddenScreen({ player, settings, audio, onContinue, onSkip, 
       <div className="flex items-center gap-3">
         {status === 'loading' && <span className="text-sm text-white/40">Loading preview…</span>}
         {status === 'unavailable' && (
-          <span className="text-sm text-rose-300">
-            No preview found — skip to the next song.
-          </span>
+          <span className="text-sm text-white/40">Finding another song…</span>
         )}
         {(status === 'ready' || status === 'playing') && (
           <>

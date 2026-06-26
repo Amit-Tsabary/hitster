@@ -53,6 +53,7 @@ export type Action =
   | { type: 'AWARD_NAME_BONUS' } // self-reported correct title+artist
   | { type: 'NEXT_TURN' } // reveal -> hidden (or gameover)
   | { type: 'SKIP_SONG' }
+  | { type: 'REPLACE_CARD' } // auto-skip a card whose preview can't be loaded (free)
   | { type: 'FREE_CARD' }
   | { type: 'RESET' };
 
@@ -221,6 +222,20 @@ export function gameReducer(state: GameState, action: Action): GameState {
         i === state.currentPlayerIdx ? { ...p, tokens: p.tokens - SKIP_COST } : p,
       );
       return { ...state, players, currentCard: card, drawIndex: nextIndex };
+    }
+
+    case 'REPLACE_CARD': {
+      // The current card's preview couldn't be resolved (no baked URL and the live lookup
+      // missed), so swap in the next card before the player places it. Free and unconditional,
+      // unlike SKIP_SONG — the player did nothing wrong. Only valid while the song is still hidden.
+      if (state.phase !== 'hidden') return state;
+      const { card, nextIndex } = drawCard(state.deck, state.drawIndex);
+      if (card === null) {
+        // Deck exhausted while searching for a playable song: end as in NEXT_TURN.
+        const top = [...state.players].sort((a, b) => b.timeline.length - a.timeline.length)[0];
+        return { ...state, phase: 'gameover', winnerId: top.id };
+      }
+      return { ...state, currentCard: card, drawIndex: nextIndex };
     }
 
     case 'FREE_CARD': {

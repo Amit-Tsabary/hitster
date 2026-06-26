@@ -1,7 +1,6 @@
 import type { DeckId, Song } from '../state/gameTypes';
 import { SONGS } from './songs';
 import { HEBREW_SONGS } from './hebrewSongs';
-import { PREVIEW_URLS } from './previewUrls.generated';
 
 export type { DeckId };
 
@@ -14,17 +13,17 @@ export interface DeckInfo {
   songs: Song[];
 }
 
-// A song is only playable if we have a baked 30s preview for it (see scripts/fetch-previews.mjs).
-// Songs without a preview are excluded from the deck entirely so they never come up in a game.
-// Re-run `npm run prefetch` after editing the decks to refresh which songs are playable.
-const isPlayable = (s: Song): boolean => Boolean(PREVIEW_URLS[s.id]);
-
+// Every song is in the deck. Previews resolve from the baked table (PREVIEW_URLS) when present
+// — instant, no network — and otherwise fall back to a live, on-demand iTunes lookup at play
+// time (see services/audioSource.ts). A song whose preview can't be resolved is auto-skipped
+// during play (REPLACE_CARD in state/gameReducer.ts), so we no longer pre-filter the deck.
+// `npm run prefetch` is now an optional step that just warms the baked cache for instant playback.
 export const DECKS: DeckInfo[] = [
-  { id: 'regular', name: 'Regular', blurb: 'Global pop & rock hits', songs: SONGS.filter(isPlayable) },
-  { id: 'hebrew', name: 'Hebrew', blurb: 'Israeli & Hebrew songs only', songs: HEBREW_SONGS.filter(isPlayable) },
+  { id: 'regular', name: 'Regular', blurb: 'Global pop & rock hits', songs: SONGS },
+  { id: 'hebrew', name: 'Hebrew', blurb: 'Israeli & Hebrew songs only', songs: HEBREW_SONGS },
 ];
 
-/** Lookup of every song across all decks, by id (includes non-playable songs, for safety). */
+/** Lookup of every song across all decks, by id. */
 const SONG_BY_ID = new Map<string, Song>(
   [...SONGS, ...HEBREW_SONGS].map((s) => [s.id, s]),
 );

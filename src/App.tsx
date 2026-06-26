@@ -22,6 +22,15 @@ function App() {
     if (state.phase === 'reveal' || state.phase === 'gameover') audio.pause();
   }, [state.phase, audio]);
 
+  // Auto-skip a card whose preview can't be loaded: previews now resolve on demand, so an
+  // occasional song has no playable URL. Rather than strand the player, draw the next card.
+  // The cascade repeats until a playable song is found (or the deck runs out).
+  useEffect(() => {
+    if (state.phase === 'hidden' && audio.status === 'unavailable') {
+      dispatch({ type: 'REPLACE_CARD' });
+    }
+  }, [state.phase, audio.status]);
+
   const eligibleChallengers = state.settings.useTokens
     ? state.players.filter((p) => p.id !== activePlayer?.id && p.tokens >= STEAL_COST)
     : [];
