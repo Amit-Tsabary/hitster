@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '../components/Button';
 import { MysteryCard } from '../components/Card';
 import type { Player, Settings } from '../state/gameTypes';
@@ -64,13 +65,17 @@ export function TurnHiddenScreen({ player, settings, audio, onContinue, onSkip, 
             <Button variant="ghost" onClick={replay} aria-label="Replay">
               ⟲
             </Button>
-            <button
+            <motion.button
               onClick={playing ? pause : play}
+              whileTap={{ scale: 0.9 }}
+              // A gentle heartbeat invites the first tap; it settles once the song is playing.
+              animate={playing ? { scale: 1 } : { scale: [1, 1.06, 1] }}
+              transition={playing ? { duration: 0.2 } : { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
               className="grid h-16 w-16 place-items-center rounded-full bg-violet-600 text-2xl shadow-lg shadow-violet-900/50 hover:bg-violet-500"
               aria-label={playing ? 'Pause' : 'Play'}
             >
               {playing ? '❚❚' : '▶'}
-            </button>
+            </motion.button>
             <div className="w-12" />
           </>
         )}

@@ -32,3 +32,89 @@ body {
   transform-origin: bottom;
   animation: eq 0.9s ease-in-out infinite;
 }
+
+/* Slowly drifting aurora blobs behind the whole app. */
+@keyframes drift {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(6vw, -4vh) scale(1.15);
+  }
+  66% {
+    transform: translate(-5vw, 5vh) scale(0.9);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+.aurora-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.5;
+  will-change: transform;
+  animation: drift 22s ease-in-out infinite;
+}
+
+/* Moving sheen swept across gradient text (titles). */
+@keyframes sheen {
+  to {
+    background-position: 200% center;
+  }
+}
+.text-sheen {
+  background-size: 200% auto;
+  animation: sheen 4s linear infinite;
+}
+
+/* Soft breathing glow used around the mystery card while it plays. */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.06);
+  }
+}
+.glow-pulse {
+  animation: glow-pulse 2.4s ease-in-out infinite;
+}
+
+/* Confetti pieces fall and tumble from the top of the screen. */
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotateZ(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--dx, 0), 110vh, 0) rotateZ(720deg);
+    opacity: 0.9;
+  }
+}
+.confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  will-change: transform;
+  animation: confetti-fall var(--dur, 2.6s) linear forwards;
+  animation-delay: var(--delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eq-bar,
+  .aurora-blob,
+  .text-sheen,
+  .glow-pulse,
+  .confetti-piece {
+    animation: none !important;
+  }
+  .confetti-piece {
+    display: none;
+  }
+}

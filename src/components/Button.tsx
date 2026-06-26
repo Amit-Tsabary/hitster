@@ -1,4 +1,6 @@
 import type { ButtonHTMLAttributes } from 'react';
+import { motion } from 'framer-motion';
+import type { HTMLMotionProps } from 'framer-motion';
 
 type Variant = 'primary' | 'ghost' | 'danger' | 'token';
 
@@ -14,11 +16,17 @@ const styles: Record<Variant, string> = {
 export function Button({
   variant = 'primary',
   className = '',
+  disabled,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
   return (
-    <button
-      {...props}
+    <motion.button
+      // A little spring on tap/hover makes every press feel tactile. Disabled buttons stay still.
+      whileTap={disabled ? undefined : { scale: 0.95 }}
+      whileHover={disabled ? undefined : { scale: 1.03 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      disabled={disabled}
+      {...(props as HTMLMotionProps<'button'>)}
       className={`rounded-xl px-5 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed ${styles[variant]} ${className}`}
     />
   );

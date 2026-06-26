@@ -1,4 +1,6 @@
-/** Small pill showing a player's HITSTER token count. */
+import { motion } from 'framer-motion';
+
+/** Small pill showing a player's HITSTER token count. Pops when the count changes. */
 export function TokenBadge({ tokens }: { tokens: number }) {
   return (
     <span
@@ -6,7 +8,16 @@ export function TokenBadge({ tokens }: { tokens: number }) {
       title="HITSTER tokens"
     >
       <span className="text-sm leading-none">🎵</span>
-      {tokens}
+      {/* Re-key on the value so each change springs in. */}
+      <motion.span
+        key={tokens}
+        initial={{ scale: 1.6, color: '#fde68a' }}
+        animate={{ scale: 1, color: '#fcd34d' }}
+        transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+        className="inline-block tabular-nums"
+      >
+        {tokens}
+      </motion.span>
     </span>
   );
 }

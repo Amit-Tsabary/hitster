@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { SongCard } from './Card';
 import type { Song } from '../state/gameTypes';
 
@@ -20,9 +21,12 @@ export function Timeline({ timeline, selectable, selectedSlot, onSelectSlot }: T
     if (!selectable) return <div className="w-1" />;
     const active = selectedSlot === i;
     return (
-      <button
+      <motion.button
         onClick={() => onSelectSlot?.(i)}
         aria-label={`Place at position ${i + 1}`}
+        whileTap={{ scale: 0.92 }}
+        animate={active ? { scale: [1, 1.07, 1] } : { scale: 1 }}
+        transition={active ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
         className={`group relative mx-0.5 flex h-52 w-10 shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition-colors ${
           active
             ? 'border-violet-400 bg-violet-500/20'
@@ -36,7 +40,7 @@ export function Timeline({ timeline, selectable, selectedSlot, onSelectSlot }: T
         >
           {active ? '▾' : '+'}
         </span>
-      </button>
+      </motion.button>
     );
   };
 

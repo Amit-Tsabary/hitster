@@ -19,7 +19,7 @@ export function SetupScreen({ onStart }: { onStart: (names: string[], settings: 
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 py-8">
-      <h1 className="bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-center text-5xl font-black tracking-tight text-transparent">
+      <h1 className="text-sheen bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 bg-clip-text text-center text-5xl font-black tracking-tight text-transparent">
         HITSTER
       </h1>
       <p className="mt-2 text-center text-sm text-white/50">

@@ -1,7 +1,9 @@
 import { useEffect, useReducer, useState } from 'react';
+import { motion } from 'framer-motion';
 import { gameReducer, initialState } from './state/gameReducer';
 import { STEAL_COST } from './state/gameTypes';
 import { useAudioPreview } from './hooks/useAudioPreview';
+import { AmbientBackground } from './components/AmbientBackground';
 import { PlayerHeader } from './components/PlayerHeader';
 import { SetupScreen } from './screens/SetupScreen';
 import { TurnHiddenScreen } from './screens/TurnHiddenScreen';
@@ -114,18 +116,36 @@ function App() {
   };
 
   const showHeader = state.phase !== 'setup' && state.phase !== 'gameover' && activePlayer;
+  // Distinct key per visible screen so the cross-fade fires on every transition (incl. the
+  // challenge sub-screen, which shares the 'placing' phase).
+  const screenKey = state.phase === 'placing' && challenging ? 'challenge' : state.phase;
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col">
-      {showHeader && (
-        <PlayerHeader
-          player={activePlayer}
-          target={state.settings.targetCards}
-          useTokens={state.settings.useTokens}
-        />
-      )}
-      <div className="flex-1">{content()}</div>
-    </div>
+    <>
+      <AmbientBackground />
+      <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col">
+        {showHeader && (
+          <PlayerHeader
+            player={activePlayer}
+            target={state.settings.targetCards}
+            useTokens={state.settings.useTokens}
+          />
+        )}
+        <div className="flex-1">
+          {/* Keyed so each new screen fades + slides in on every transition. Enter-only (no
+              AnimatePresence exit) keeps the previous screen from lingering in the DOM. */}
+          <motion.div
+            key={screenKey}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
+            className="min-h-full"
+          >
+            {content()}
+          </motion.div>
+        </div>
+      </div>
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '../components/Button';
+import { Confetti } from '../components/Confetti';
 import { Timeline } from '../components/Timeline';
 import type { GameState, Player, Song } from '../state/gameTypes';
 
@@ -35,10 +36,22 @@ export function RevealScreen({ state, card, activePlayer, onAwardBonus, onNext }
   // Whose timeline to display: the player who received the card, else the active player's.
   const shown = winner ?? activePlayer;
 
+  // Celebrate when the card was won (placed correctly or stolen).
+  const celebrate = stoleIt || Boolean(lastPlacementCorrect);
+
   return (
     <div className="flex min-h-full flex-col px-4 py-6">
+      {celebrate && <Confetti />}
       <div className="text-center">
-        <h2 className={`text-2xl font-black ${tone}`}>{headline}</h2>
+        <motion.h2
+          key={headline}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 18 }}
+          className={`text-2xl font-black ${tone}`}
+        >
+          {headline}
+        </motion.h2>
       </div>
 
       {/* Flipping card reveal */}
