@@ -1,11 +1,21 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 /**
  * A one-shot burst of falling confetti, used to celebrate a correct placement or a win.
  * Pieces are pure-CSS animated (see .confetti-piece in index.css) and removed under
  * prefers-reduced-motion. Render it conditionally; remount (via `key`) to replay.
+ *
+ * Mounting is deferred until the next frame so the burst doesn't land in the same commit as
+ * the screen's entrance animation — that collision is what made the celebration stutter and
+ * then jump ("freeze then release").
  */
 export function Confetti({ count = 80 }: { count?: number }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   const colors = ['#a78bfa', '#f472b6', '#facc15', '#4ade80', '#22d3ee', '#fb923c'];
   const pieces = useMemo(
     () =>
@@ -21,6 +31,8 @@ export function Confetti({ count = 80 }: { count?: number }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [count],
   );
+
+  if (!ready) return null;
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
