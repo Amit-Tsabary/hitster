@@ -147,10 +147,13 @@ export function gameReducer(state: GameState, action: Action): GameState {
 
       let players = state.players;
       // Resolve steal first: a correct challenger takes the card.
-      if (state.steal) {
+      // A challenge is a *disagreement* with the active player's placement, so it is judged
+      // against the ACTIVE player's timeline (not the challenger's own, unrelated cards) and
+      // the challenger must pick a different slot than the active player did.
+      if (state.steal && state.steal.slotIndex !== state.pendingSlot) {
         const chIdx = state.players.findIndex((p) => p.id === state.steal!.playerId);
         const challenger = state.players[chIdx];
-        const stealCorrect = isPlacementCorrect(challenger.timeline, state.steal.slotIndex, card.year);
+        const stealCorrect = isPlacementCorrect(active.timeline, state.steal.slotIndex, card.year);
         if (stealCorrect) {
           players = players.map((p, i) =>
             i === chIdx ? { ...p, timeline: insertSorted(p.timeline, card) } : p,

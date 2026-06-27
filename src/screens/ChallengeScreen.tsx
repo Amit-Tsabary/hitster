@@ -8,36 +8,44 @@ import { STEAL_COST } from '../state/gameTypes';
 interface Props {
   players: Player[];
   activePlayerId: string;
+  /** The slot the active player committed to — challengers must disagree, so it's locked. */
+  activeSlot: number | null;
   onSteal: (playerId: string, slotIndex: number) => void;
   onSkip: () => void;
 }
 
 /**
  * The steal window: after the active player locks in, anyone else with a token may shout
- * "HITSTER!" to challenge. They place the (still hidden) card on their own timeline — if correct,
- * they steal it. The card's year stays concealed here.
+ * "HITSTER!" to challenge. A challenge is a *disagreement* with the active player's placement,
+ * so the challenger places the (still hidden) card on the ACTIVE player's timeline, in a
+ * different slot than the active player chose — if that slot is right, they steal the card.
+ * The card's year stays concealed here.
  */
-export function ChallengeScreen({ players, activePlayerId, onSteal, onSkip }: Props) {
+export function ChallengeScreen({ players, activePlayerId, activeSlot, onSteal, onSkip }: Props) {
   const [challenger, setChallenger] = useState<Player | null>(null);
   const [slot, setSlot] = useState<number | null>(null);
 
+  const activePlayer = players.find((p) => p.id === activePlayerId);
   const eligible = players.filter((p) => p.id !== activePlayerId && p.tokens >= STEAL_COST);
 
-  if (challenger) {
+  if (challenger && activePlayer) {
     return (
       <div className="flex min-h-full flex-col px-4 py-6">
         <div className="text-center">
           <div className="text-sm uppercase tracking-widest text-amber-300">HITSTER! steal</div>
-          <h2 className="mt-1 text-xl font-bold">{challenger.name}, place it on your timeline</h2>
+          <h2 className="mt-1 text-xl font-bold">
+            {challenger.name}, where does it belong on {activePlayer.name}'s timeline?
+          </h2>
           <p className="mt-1 text-sm text-white/40">
-            Spend 1 🎵. Guess right and you steal the card.
+            Spend 1 🎵. Pick a different spot than ★ — guess right and you steal the card.
           </p>
         </div>
         <div className="my-auto rounded-2xl bg-white/[0.03] ring-1 ring-white/5">
           <Timeline
-            timeline={challenger.timeline}
+            timeline={activePlayer.timeline}
             selectable
             selectedSlot={slot}
+            lockedSlot={activeSlot}
             onSelectSlot={setSlot}
           />
         </div>

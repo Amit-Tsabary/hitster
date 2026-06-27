@@ -67,6 +67,7 @@ function App() {
             <ChallengeScreen
               players={state.players}
               activePlayerId={activePlayer.id}
+              activeSlot={state.pendingSlot}
               onSteal={(playerId, slotIndex) => {
                 dispatch({ type: 'STEAL', playerId, slotIndex });
                 dispatch({ type: 'CONFIRM_PLACEMENT' });

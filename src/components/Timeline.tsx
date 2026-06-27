@@ -7,6 +7,8 @@ interface TimelineProps {
   /** When set, render clickable insertion slots and highlight the selected one. */
   selectable?: boolean;
   selectedSlot?: number | null;
+  /** A slot already claimed by the active player — shown locked, can't be selected (challenge view). */
+  lockedSlot?: number | null;
   onSelectSlot?: (slotIndex: number) => void;
 }
 
@@ -14,7 +16,13 @@ interface TimelineProps {
  * Renders a player's timeline left→right (oldest→newest). When `selectable`, an insertion
  * slot button sits before, between, and after every card.
  */
-export function Timeline({ timeline, selectable, selectedSlot, onSelectSlot }: TimelineProps) {
+export function Timeline({
+  timeline,
+  selectable,
+  selectedSlot,
+  lockedSlot,
+  onSelectSlot,
+}: TimelineProps) {
   const slotCount = timeline.length + 1;
 
   return (
@@ -25,6 +33,7 @@ export function Timeline({ timeline, selectable, selectedSlot, onSelectSlot }: T
             i={i}
             selectable={selectable}
             active={selectedSlot === i}
+            locked={lockedSlot === i}
             onSelectSlot={onSelectSlot}
           />
           {i < timeline.length && (
@@ -42,6 +51,7 @@ interface SlotProps {
   i: number;
   selectable?: boolean;
   active: boolean;
+  locked?: boolean;
   onSelectSlot?: (slotIndex: number) => void;
 }
 
@@ -50,8 +60,19 @@ interface SlotProps {
  * identity is stable across renders — otherwise every re-render would remount the button and
  * interrupt its hover/tap/pulse animations.
  */
-function Slot({ i, selectable, active, onSelectSlot }: SlotProps) {
+function Slot({ i, selectable, active, locked, onSelectSlot }: SlotProps) {
   if (!selectable) return <div className="w-1" />;
+  // The active player's pick, shown to a challenger: non-interactive, marked, can't be re-picked.
+  if (locked) {
+    return (
+      <div
+        aria-label={`Active player's placement at position ${i + 1}`}
+        className="relative mx-0.5 flex h-52 w-10 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-amber-400/60 bg-amber-500/10"
+      >
+        <span className="text-2xl font-bold text-amber-300/80">★</span>
+      </div>
+    );
+  }
   return (
     <motion.button
       onClick={() => onSelectSlot?.(i)}
