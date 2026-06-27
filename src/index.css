@@ -84,25 +84,19 @@ body {
   animation: glow-pulse 2.4s ease-in-out infinite;
 }
 
-/* Confetti pieces fall and tumble from the top of the screen. */
-@keyframes confetti-fall {
-  0% {
-    transform: translate3d(0, -10vh, 0) rotateZ(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translate3d(var(--dx, 0), 110vh, 0) rotateZ(720deg);
-    opacity: 0.9;
-  }
-}
+/* Confetti pieces. Motion is driven per-piece via the Web Animations API (see Confetti.tsx)
+   with concrete transform values so the browser composites it; a CSS keyframe using var() in
+   its transform would fall back to the main thread and stutter. */
 .confetti-piece {
   position: absolute;
   top: 0;
   width: 9px;
   height: 14px;
   border-radius: 2px;
-  animation: confetti-fall var(--dur, 2.6s) linear forwards;
-  animation-delay: var(--delay, 0s);
+  /* Promote each piece to its own compositor layer up front. Without this, Chrome may run the
+     WAAPI transform animation on the main thread, where framer-motion's mount springs (the
+     headline scale + card flip) starve it — the fall freezes for ~1s then snaps forward. */
+  will-change: transform, opacity;
 }
 
 @media (prefers-reduced-motion: reduce) {
