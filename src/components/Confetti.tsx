@@ -1,21 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * A one-shot burst of falling confetti, used to celebrate a correct placement or a win.
  * Pieces are pure-CSS animated (see .confetti-piece in index.css) and removed under
  * prefers-reduced-motion. Render it conditionally; remount (via `key`) to replay.
  *
- * Mounting is deferred until the next frame so the burst doesn't land in the same commit as
- * the screen's entrance animation — that collision is what made the celebration stutter and
- * then jump ("freeze then release").
+ * Rendered through a portal to <body> so it escapes the screen wrapper, which animates a
+ * `transform` on every transition. A transformed ancestor becomes the containing block for
+ * `position: fixed` children, pulling the whole burst into the parent's animating layer and
+ * making it stutter then snap ("freeze then release") when that transform settles.
  */
 export function Confetti({ count = 80 }: { count?: number }) {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
   const colors = ['#a78bfa', '#f472b6', '#facc15', '#4ade80', '#22d3ee', '#fb923c'];
   const pieces = useMemo(
     () =>
@@ -32,9 +28,7 @@ export function Confetti({ count = 80 }: { count?: number }) {
     [count],
   );
 
-  if (!ready) return null;
-
-  return (
+  return createPortal(
     <div aria-hidden className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
       {pieces.map((p) => (
         <span
@@ -52,6 +46,7 @@ export function Confetti({ count = 80 }: { count?: number }) {
           }
         />
       ))}
-    </div>
+    </div>,
+    document.body,
   );
 }
